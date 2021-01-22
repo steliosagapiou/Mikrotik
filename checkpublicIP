@@ -1,0 +1,23 @@
+# Mikrotik script to send email when public IP address changes
+
+/system script
+add dont-require-permissions=no name=checkpublicIP owner=admin policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="# script to send email when public ip address changes\
+    \n:global SYSsendemail \"<send-to-email>\";\
+    \n:global SYSmyemail \"<send-from-email>\";\
+    \n:global SYSemailserver \"smtp.gmail.com\";\
+    \n:global previousIP ;\
+    \n:global currentIP [:resolve myip.opendns.com server=208.67.222.222];\
+    \n\
+    \n:if (\$currentIP != \$previousIP) do={\
+    \n        :log info \"OLD_ADDRESS \$previousIP\"\
+    \n        :log info \"NEW_ADDRESS \$currentIP\"\
+    \n         /tool e-mail send \\\
+    \n         to=\$SYSsendemail \\\
+    \n         subject=\"\$[/system identity get name] \$[/system clock get time]-\$[/system clock get date]. Public IP change\" \\\
+    \n         from=\$SYSmyemail server=\$SYSemailserver \\ \
+    \n         body=(\"Public IP address just changed:\\nOld: \" . \$previousIP . \"\\nNew: \". \$currentIP);\
+    \n        :set previousIP \$currentIP\
+    \n}"
+
+/system scheduler
+add interval=1m name=monitorpublicIP on-event=checkpublicIP policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon start-date=jan/10/2021 start-time=13:45:52
